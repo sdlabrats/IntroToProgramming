@@ -1,11 +1,12 @@
 // 🟩 STUDENT ZONE: Try changing these!
-  let gravity = 4; 
+  let gravity = 6 ; 
   let jumpPower = 10;
-  let birdSize = 30;
+
   let pipeWidth = 50;
   let pipeGap = 150;
 
-
+  let birdSpeed = 4  
+  let birdSize = 30;
 
   let emoji = ["🐤", "😀", "💩", "👻", "🦋", "🌸", "🚁", "🚀", "🧚", "🐲"];
   let birdChar; 
@@ -95,14 +96,14 @@ function update() {
   birdY += birdVelocity;
 
   // Add pipes
-  if (frame % 90 === 0) {
+  if (frame % (180 / birdSpeed) === 0) {
     let top = Math.random() * (canvas.height - pipeGap - 100) + 50;
     pipes.push({ x: canvas.width, top });
   }
 
   // Move and remove pipes
   for (let pipe of pipes) {
-    pipe.x -= 2;
+    pipe.x -= birdSpeed ;
   }
   pipes = pipes.filter(p => p.x + pipeWidth > 0);
 
