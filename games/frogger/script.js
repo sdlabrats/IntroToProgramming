@@ -1,12 +1,17 @@
-// === STUDENT ZONE: Customize your game here! ===
+// 🟩 STUDENT ZONE: Try changing these!
 const playerChar = "🐸";
 const carChar = "🚗";
-const carSpeed = 2.5;
-const laneColors = ["lightgray", "gray", "darkgray"];
+const carSpeed = 1;
+const laneColor = "lightgray";
 const winMessage = "🎉 You made it!";
 const loseMessage = "💥 You got hit!";
-const bgMusic = ""; // Optional
-// ===============================================
+
+const laneHeight = 60;       // smaller lanes
+const numLanes = 6;          // main lanes
+const bufferLanes = 1;       // empty lanes between roads
+const carsPerLane = 2;
+const jumpDistance = laneHeight;
+// 🟩 END STUDENT ZONE
 
 
 
@@ -34,103 +39,172 @@ const bgMusic = ""; // Optional
 
 
 
-// Setup
+
+
+
+
+
+
+
+
+
+
+// ============================
+// CALCULATE TOTAL LANES & CANVAS
+// ============================
+const totalLanes = numLanes + bufferLanes * (numLanes - 1);
+
 const canvas = document.getElementById("gameCanvas");
+canvas.width = 480;                      // smaller width
+canvas.height = totalLanes * laneHeight; // adjust height
 const ctx = canvas.getContext("2d");
-const tileSize = 40;
-let keys = {};
+const canvasWidth = canvas.width;
+const canvasHeight = canvas.height;
 
-let player = {
-  x: 4,
-  y: 9
+// ============================
+// PLAYER SPAWN ON SAFE LANE
+// ============================
+function getBottomSafeLaneY() {
+  for (let i = totalLanes - 1; i >= 0; i--) {
+    const isMainLane = (i % (1 + bufferLanes)) === 0; // road lane
+    if (!isMainLane) return i * laneHeight;
+  }
+  return canvasHeight - laneHeight; // fallback
+}
+
+let player = { 
+  x: Math.floor(numLanes / 2) * laneHeight, 
+  y: getBottomSafeLaneY() 
 };
 
+// ============================
+// CARS
+// ============================
 let cars = [];
+let gameOver = false;
 
-// Create cars in random lanes
 function initCars() {
   cars = [];
-  for (let lane = 1; lane <= 7; lane += 2) {
-    for (let i = 0; i < 2; i++) {
+  for (let i = 0; i < numLanes; i++) {
+    const laneY = (i * (1 + bufferLanes)) * laneHeight;
+    for (let j = 0; j < carsPerLane; j++) {
       cars.push({
-        x: Math.random() * 10,
-        y: lane,
-        speed: (Math.random() < 0.5 ? -1 : 1) * (carSpeed + Math.random())
+        x: j * 150,
+        y: laneY,
+        direction: i % 2 === 0 ? 1 : -1,
+        speed: carSpeed + Math.random(),
       });
     }
   }
 }
 
-function drawTile(x, y, char, color = "black") {
-  ctx.fillStyle = color;
-  ctx.font = "30px Arial";
-  ctx.fillText(char, x * tileSize + 10, y * tileSize + 30);
-}
-
+// ============================
+// DRAW FUNCTIONS
+// ============================
 function drawLanes() {
-  for (let y = 1; y <= 7; y++) {
-    ctx.fillStyle = laneColors[y % laneColors.length];
-    ctx.fillRect(0, y * tileSize, canvas.width, tileSize);
+  for (let i = 0; i < totalLanes; i++) {
+    const mainLaneIndex = i / (1 + bufferLanes);
+    ctx.fillStyle = (mainLaneIndex % 1 === 0) ? laneColor : "#77c22d";
+    ctx.fillRect(0, i * laneHeight, canvasWidth, laneHeight);
   }
 }
 
+function drawPlayer() {
+  ctx.font = `${laneHeight * 0.8}px Arial`;
+  ctx.fillText(playerChar, player.x + laneHeight * 0.1, player.y + laneHeight * 0.8);
+}
+
+function drawCars() {
+  ctx.font = `${laneHeight * 0.7}px Arial`;
+  cars.forEach(car => {
+    ctx.fillText(carChar, car.x, car.y + laneHeight * 0.7);
+  });
+}
+
+// ============================
+// GAME LOGIC
+// ============================
 function updateCars() {
-  for (let car of cars) {
-    car.x += car.speed * 0.05;
-    if (car.x > 10) car.x = -1;
-    if (car.x < -1) car.x = 10;
-    drawTile(Math.floor(car.x), car.y, carChar);
-  }
+  cars.forEach(car => {
+    car.x += car.speed * car.direction;
+    if (car.x > canvasWidth) car.x = -50;
+    if (car.x < -50) car.x = canvasWidth;
+  });
 }
 
 function checkCollision() {
-  for (let car of cars) {
-    if (Math.floor(car.x) === player.x && car.y === player.y) {
-      alert(loseMessage);
-      resetGame();
+  cars.forEach(car => {
+    const carRect = { x: car.x, y: car.y, w: laneHeight, h: laneHeight };
+    const playerRect = { x: player.x, y: player.y, w: laneHeight, h: laneHeight };
+    if (
+      playerRect.x < carRect.x + carRect.w &&
+      playerRect.x + playerRect.w > carRect.x &&
+      playerRect.y < carRect.y + carRect.h &&
+      playerRect.y + playerRect.h > carRect.y
+    ) {
+      gameOver = true;
     }
-  }
-}
+  });
 
-function checkWin() {
-  if (player.y === 0) {
+  if (player.y <= 0) {
     alert(winMessage);
     resetGame();
   }
 }
 
-function drawPlayer() {
-  drawTile(player.x, player.y, playerChar, "green");
-}
+// ============================
+// PLAYER MOVEMENT
+// ============================
+document.addEventListener("keydown", e => {
+  if (gameOver) return;
+  switch (e.key) {
+    case "ArrowUp": player.y -= jumpDistance; break;
+    case "ArrowDown": player.y += jumpDistance; break;
+    case "ArrowLeft": player.x -= jumpDistance; break;
+    case "ArrowRight": player.x += jumpDistance; break;
+  }
+  player.x = Math.max(0, Math.min(canvasWidth - laneHeight, player.x));
+  player.y = Math.max(0, Math.min(canvasHeight - laneHeight, player.y));
+});
 
+// ============================
+// GAME LOOP
+// ============================
 function gameLoop() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.clearRect(0, 0, canvasWidth, canvasHeight);
   drawLanes();
   updateCars();
+  drawCars();
   drawPlayer();
   checkCollision();
-  checkWin();
-  requestAnimationFrame(gameLoop);
+
+  if (gameOver) {
+    ctx.fillStyle = "red";
+    ctx.font = "40px Arial";
+    ctx.fillText(loseMessage, canvasWidth / 2 - 120, canvasHeight / 2);
+  } else {
+    requestAnimationFrame(gameLoop);
+  }
 }
 
+// ============================
+// RESET GAME
+// ============================
 function resetGame() {
-  player.x = 4;
-  player.y = 9;
+  player = { x: Math.floor(numLanes / 2) * laneHeight, y: getBottomSafeLaneY() };
+  gameOver = false;
   initCars();
+  gameLoop();
 }
 
-document.addEventListener("keydown", (e) => {
-  keys[e.key] = true;
+// ============================
+// RESTART BUTTON
+// ============================
+const restartBtn = document.getElementById("restartBtn");
+restartBtn.addEventListener("click", () => resetGame());
 
-  if (e.key === "ArrowUp" && player.y > 0) player.y--;
-  if (e.key === "ArrowDown" && player.y < 9) player.y++;
-  if (e.key === "ArrowLeft" && player.x > 0) player.x--;
-  if (e.key === "ArrowRight" && player.x < 9) player.x++;
-});
-
-document.addEventListener("keyup", (e) => {
-  keys[e.key] = false;
-});
-
-resetGame();
+// ============================
+// START
+// ============================
+initCars();
 gameLoop();
