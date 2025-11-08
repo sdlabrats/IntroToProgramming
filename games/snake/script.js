@@ -6,7 +6,7 @@ let foodColor = "blue";             // Color of the food
 let gridSize = 20;                  // Size of each square in pixels
 
 // Game mechanics
-let moveSpeed = 40;                // Milliseconds between moves (lower = faster)
+let moveSpeed = 8;                // Milliseconds between moves (lower = faster)
 let initialSnakeLength = 3;         // Starting length of the snake
 let wallCollision = false;           // true = hitting wall ends game, false = wraps around
 

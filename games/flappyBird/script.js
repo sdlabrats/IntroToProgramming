@@ -6,11 +6,11 @@ let jumpPower = 10;        // How strong the flap
 
 // Pipes
 let pipeWidth = 50;        // Width of pipes
-let pipeGap = 150;         // Gap between pipes
+let pipeGap = 200;         // Gap between pipes
 let pipeDistance = 200; // Minimum distance between pipes (pixels)
 
 // Bird
-let birdSpeed = 3;         // Horizontal movement speed (for future upgrades)
+let birdSpeed = 2.5;         // Horizontal movement speed (for future upgrades)
 let birdSize = 30;         // Size of the bird
 
 // Emoji selection

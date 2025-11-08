@@ -7,7 +7,7 @@ const winMessage = "🎉 You made it!";
 const loseMessage = "💥 You got hit!";
 
 const laneHeight = 60;       // smaller lanes
-const numLanes = 6;          // main lanes
+const numLanes = 6;         // main lanes
 const bufferLanes = 1;       // empty lanes between roads
 const carsPerLane = 2;
 const jumpDistance = laneHeight;
