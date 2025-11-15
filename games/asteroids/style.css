@@ -1,0 +1,15 @@
+html, body {
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    background: black;
+}
+#score {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    font-family: monospace;
+    font-size: 22px;
+    color: white;
+    z-index: 10;
+}

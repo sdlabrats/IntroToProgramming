@@ -7,7 +7,7 @@ html, body {
 }
 
 #gameCanvas {
-    background: linear-gradient(#70d6ff, #ffffff);
+    background: #a3e9ff;
     display: block;
     width: 100vw;
     height: 100vh;

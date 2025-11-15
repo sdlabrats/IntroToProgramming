@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Crossy Road Demo</title>
+<style>
+    body {
+        background: #222;
+        display: flex;
+        justify-content: center;
+        margin-top: 20px;
+        font-family: sans-serif;
+    }
+
+    #game {
+        width: 400px;
+        height: 600px;
+        background: #6cc070;
+        position: relative;
+        overflow: hidden;
+        border: 4px solid #fff;
+    }
+
+    /* --- ROADS --- */
+    .road {
+        width: 100%;
+        height: 60px;
+        background: #333;
+        position: absolute;
+        left: 0;
+    }
+
+    /* white dashed lane lines */
+    .lane-line {
+        position: absolute;
+        width: 100%;
+        height: 4px;
+        background: repeating-linear-gradient(
+            to right,
+            #fff 0px,
+            #fff 20px,
+            transparent 20px,
+            transparent 40px
+        );
+        opacity: 0.5;
+        left: 0;
+    }
+
+    .player {
+        width: 30px;
+        height: 30px;
+        background: yellow;
+        position: absolute;
+        bottom: 10px;
+        left: 185px;
+        border-radius: 5px;
+        z-index: 10;
+    }
+
+    .car {
+        width: 60px;
+        height: 30px;
+        background: red;
+        position: absolute;
+        border-radius: 5px;
+        z-index: 5;
+    }
+
+    #msg {
+        position: absolute;
+        width: 100%;
+        top: 40%;
+        text-align: center;
+        font-size: 32px;
+        font-weight: bold;
+        color: white;
+        text-shadow: 2px 2px 4px #000;
+        display: none;
+        z-index: 20;
+    }
+</style>
+</head>
+<body>
+
+<div id="game">
+
+    <div id="msg">Game Over<br>Press R to Restart</div>
+    <div class="player" id="player"></div>
+
+    <!-- FIXED ROADS -->
+    <!-- Road #1 -->
+    <div class="road" style="top: 80px;"></div>
+    <div class="lane-line" style="top: 110px;"></div>
+
+    <!-- Road #2 -->
+    <div class="road" style="top: 200px;"></div>
+    <div class="lane-line" style="top: 230px;"></div>
+
+    <!-- Road #3 -->
+    <div class="road" style="top: 320px;"></div>
+    <div class="lane-line" style="top: 350px;"></div>
+
+    <!-- Road #4 -->
+    <div class="road" style="top: 440px;"></div>
+    <div class="lane-line" style="top: 470px;"></div>
+
+</div>
+
+<script>
+const game = document.getElementById("game");
+const player = document.getElementById("player");
+const msg = document.getElementById("msg");
+
+let playerX = 185, playerY = 10;
+let cars = [];
+let gameOver = false;
+
+function spawnCar() {
+    const laneIndex = Math.floor(Math.random() * 4);
+    const laneY = 80 + laneIndex * 120 + 15;
+
+    const car = document.createElement("div");
+    car.className = "car";
+    car.style.top = laneY + "px";
+    car.x = -100 - Math.random()*200;
+    car.style.left = car.x + "px";
+    car.speed = 2 + Math.random() * 3;
+    game.appendChild(car);
+    cars.push(car);
+}
+
+function updatePlayer() {
+    player.style.left = playerX + "px";
+    player.style.bottom = playerY + "px";
+}
+
+function updateCars() {
+    cars.forEach(car => {
+        car.x += car.speed;
+        car.style.left = car.x + "px";
+
+        if (car.x > 500) {
+            game.removeChild(car);
+            cars.splice(cars.indexOf(car), 1);
+        }
+
+        const pr = player.getBoundingClientRect();
+        const cr = car.getBoundingClientRect();
+        if (!gameOver &&
+            pr.left < cr.right && pr.right > cr.left &&
+            pr.top < cr.bottom && pr.bottom > cr.top) {
+            endGame();
+        }
+    });
+}
+
+function endGame() {
+    gameOver = true;
+    msg.style.display = "block";
+}
+
+document.addEventListener("keydown", e => {
+    if (gameOver && e.key.toLowerCase() === "r") location.reload();
+    if (gameOver) return;
+
+    const step = 20;
+    if (e.key === "ArrowUp") playerY += step;
+    if (e.key === "ArrowDown") playerY -= step;
+    if (e.key === "ArrowLeft") playerX -= step;
+    if (e.key === "ArrowRight") playerX += step;
+
+    playerX = Math.max(0, Math.min(370, playerX));
+    playerY = Math.max(0, Math.min(560, playerY));
+
+    updatePlayer();
+});
+
+function gameLoop() {
+    if (!gameOver) {
+        if (Math.random() < 0.02) spawnCar();
+        updateCars();
+    }
+    requestAnimationFrame(gameLoop);
+}
+
+updatePlayer();
+gameLoop();
+</script>
+</body>
+</html>

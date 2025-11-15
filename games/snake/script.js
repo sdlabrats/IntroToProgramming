@@ -1,166 +1,163 @@
-// 🟩 STUDENT ZONE: Try changing these!
+//-----------------------------------------------------------
+// 🎓 STUDENT ZONE – Fun variables you can change!
+//-----------------------------------------------------------
 
-// Appearance
-let snakeColor = "yellow";          // Color of the snake
-let foodColor = "blue";             // Color of the food
-let gridSize = 20;                  // Size of each square in pixels
+let snakeEmoji = "🟩";
+let foodEmoji = "🍎";
+let bonusFoodEmoji = "⭐";
 
-// Game mechanics
-let moveSpeed = 8;                // Milliseconds between moves (lower = faster)
-let initialSnakeLength = 3;         // Starting length of the snake
-let wallCollision = false;           // true = hitting wall ends game, false = wraps around
+let gridSize = 20;
 
-// Score
-let showScore = true;               // Display score on screen
-let scoreColor = "white";           // Score text color
-let winLength = 50;                 // Optional: win when snake reaches this length
+let snakeStartLength = 3;
+let snakeSpeed = 150;
 
-// Messages
-let winMessage = "🎉 You Win!";
-let loseMessage = "💥 Game Over!";
+let snakeGrowth = 2;
 
-// 🟩 END STUDENT ZONE
+let bonusFoodChance = 20;
 
+let wallCollision = true;
 
+//-----------------------------------------------------------
+// END OF STUDENT ZONE — Game engine below
+//-----------------------------------------------------------
 
+// Player controls wrap around (true = teleport to opposite edge, only works if wallCollision=false)
+let wrapAround = !wallCollision;
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-moveSpeed = 1000/moveSpeed
-
-
-const canvas = document.getElementById("game");
+const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
-const messageBox = document.getElementById("message");
-const scoreBox = document.getElementById("score");
-const restartBtn = document.getElementById("restartBtn");
 
-let snake, food, direction, gameOver, score;
+let width, height, cellSize;
+function resize() {
+    width = canvas.width = window.innerWidth;
+    height = canvas.height = window.innerHeight;
+    cellSize = Math.min(width, height) / gridSize;
+}
+resize();
+window.addEventListener("resize", resize);
 
-function resetGame() {
-  snake = [];
-  for (let i = 0; i < initialSnakeLength; i++) {
-    snake.push({ x: 10 - i, y: 10 });
-  }
-  direction = { x: 1, y: 0 };
-  food = spawnFood();
-  gameOver = false;
-  score = 0;
-  messageBox.textContent = "";
-  restartBtn.style.display = "none";
-  updateScore();
+// Screens
+const startScreen = document.getElementById("startScreen");
+const gameOverScreen = document.getElementById("gameOverScreen");
+const winScreen = document.getElementById("winScreen");
+
+document.getElementById("startBtn").onclick = startGame;
+document.querySelectorAll(".restartBtn").forEach(btn => {
+    btn.onclick = () => {
+        gameOverScreen.classList.add("hidden");
+        winScreen.classList.add("hidden");
+        startGame();
+    };
+});
+
+// Game variables
+let snake, food, direction, nextDirection, gameRunning, score;
+
+function startGame() {
+    snake = [];
+    for (let i = 0; i < snakeStartLength; i++) {
+        snake.push({x: Math.floor(gridSize/2), y: Math.floor(gridSize/2) + i});
+    }
+    direction = "up";
+    nextDirection = "up";
+    spawnFood();
+    gameRunning = true;
+    score = 0;
+
+    startScreen.classList.add("hidden");
+    gameLoop();
 }
 
 function spawnFood() {
-  let x, y;
-  do {
-    x = Math.floor(Math.random() * (canvas.width / gridSize));
-    y = Math.floor(Math.random() * (canvas.height / gridSize));
-  } while (snake.some(seg => seg.x === x && seg.y === y));
-  return { x, y };
+    let isBonus = Math.random() * 100 < bonusFoodChance;
+    food = {
+        x: Math.floor(Math.random() * gridSize),
+        y: Math.floor(Math.random() * gridSize),
+        emoji: isBonus ? bonusFoodEmoji : foodEmoji,
+        bonus: isBonus
+    };
 }
 
-function drawSquare(x, y, color) {
-  ctx.fillStyle = color;
-  ctx.fillRect(x * gridSize, y * gridSize, gridSize - 1, gridSize - 1);
+document.addEventListener("keydown", (e) => {
+    if (e.code === "ArrowUp" && direction !== "down") nextDirection = "up";
+    if (e.code === "ArrowDown" && direction !== "up") nextDirection = "down";
+    if (e.code === "ArrowLeft" && direction !== "right") nextDirection = "left";
+    if (e.code === "ArrowRight" && direction !== "left") nextDirection = "right";
+    if (e.code === "KeyW" && direction !== "down") nextDirection = "up";
+    if (e.code === "KeyS" && direction !== "up") nextDirection = "down";
+    if (e.code === "KeyA" && direction !== "right") nextDirection = "left";
+    if (e.code === "KeyD" && direction !== "left") nextDirection = "right";
+});
+
+function gameLoop() {
+    if (!gameRunning) return;
+
+    direction = nextDirection;
+
+    let head = { ...snake[0] };
+    if (direction === "up") head.y--;
+    if (direction === "down") head.y++;
+    if (direction === "left") head.x--;
+    if (direction === "right") head.x++;
+
+    // Wall collision or wrap around
+    if (wallCollision) {
+        if (head.x < 0 || head.x >= gridSize || head.y < 0 || head.y >= gridSize) return endGame();
+    } else if (wrapAround) {
+        if (head.x < 0) head.x = gridSize - 1;
+        if (head.x >= gridSize) head.x = 0;
+        if (head.y < 0) head.y = gridSize - 1;
+        if (head.y >= gridSize) head.y = 0;
+    }
+
+    // Check collision with self
+    for (let segment of snake) {
+        if (head.x === segment.x && head.y === segment.y) return endGame();
+    }
+
+    snake.unshift(head);
+
+    // Check food
+    if (head.x === food.x && head.y === food.y) {
+        for (let i = 1; i < snakeGrowth; i++) snake.push({...snake[snake.length-1]});
+        score += food.bonus ? 5 : 1;
+        spawnFood();
+    } else {
+        snake.pop();
+    }
+
+    draw();
+
+    setTimeout(gameLoop, snakeSpeed);
 }
 
 function draw() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.clearRect(0, 0, width, height);
 
-  // Draw food
-  drawSquare(food.x, food.y, foodColor);
+    // Draw border
+    ctx.strokeStyle = "#ffffff";
+    ctx.lineWidth = 4;
+    ctx.strokeRect(0, 0, cellSize * gridSize, cellSize * gridSize);
 
-  // Draw snake
-  snake.forEach(seg => drawSquare(seg.x, seg.y, snakeColor));
-}
+    ctx.font = cellSize + "px Arial";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
 
-function moveSnake() {
-  if (gameOver) return;
+    // Draw food
+    ctx.fillText(food.emoji, food.x * cellSize + cellSize / 2, food.y * cellSize + cellSize / 2);
 
-  let head = { x: snake[0].x + direction.x, y: snake[0].y + direction.y };
-
-  // Wrap around or collision
-  if (!wallCollision) {
-    if (head.x < 0) head.x = canvas.width / gridSize - 1;
-    if (head.x >= canvas.width / gridSize) head.x = 0;
-    if (head.y < 0) head.y = canvas.height / gridSize - 1;
-    if (head.y >= canvas.height / gridSize) head.y = 0;
-  } else {
-    if (head.x < 0 || head.x >= canvas.width / gridSize ||
-        head.y < 0 || head.y >= canvas.height / gridSize) {
-      endGame(loseMessage);
-      return;
+    // Draw snake
+    for (let segment of snake) {
+        ctx.fillText(snakeEmoji, segment.x * cellSize + cellSize / 2, segment.y * cellSize + cellSize / 2);
     }
-  }
-
-  // Check collision with self
-  if (snake.some(seg => seg.x === head.x && seg.y === head.y)) {
-    endGame(loseMessage);
-    return;
-  }
-
-  snake.unshift(head);
-
-  // Check food
-  if (head.x === food.x && head.y === food.y) {
-    score++;
-    food = spawnFood();
-    if (snake.length >= winLength) {
-      endGame(winMessage);
-    }
-  } else {
-    snake.pop();
-  }
-
-  updateScore();
 }
 
-function updateScore() {
-  if (showScore) scoreBox.textContent = "Score: " + score;
-  scoreBox.style.color = scoreColor;
+function endGame() {
+    gameRunning = false;
+    gameOverScreen.classList.remove("hidden");
 }
 
-function endGame(message) {
-  gameOver = true;
-  messageBox.textContent = message;
-  restartBtn.style.display = "inline-block";
+function winGame() {
+    gameRunning = false;
+    winScreen.classList.remove("hidden");
 }
-
-document.addEventListener("keydown", e => {
-  if (gameOver) return;
-  if (e.key === "ArrowUp" && direction.y === 0) direction = { x: 0, y: -1 };
-  if (e.key === "ArrowDown" && direction.y === 0) direction = { x: 0, y: 1 };
-  if (e.key === "ArrowLeft" && direction.x === 0) direction = { x: -1, y: 0 };
-  if (e.key === "ArrowRight" && direction.x === 0) direction = { x: 1, y: 0 };
-});
-
-restartBtn.addEventListener("click", resetGame);
-
-resetGame();
-draw();
-setInterval(() => {
-  moveSnake();
-  draw();
-}, moveSpeed);
